@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Reflection;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Xunit;
 using Assert = Xunit.Assert;
 
@@ -12,49 +14,58 @@ namespace FHIRTest
     /// <summary>
     /// Testing Restful API FHIR spec defined here http://hl7.org/fhir/http.html#2.21.0
     /// </summary>
-    public class RestfulApiTest : IClassFixture<DataGenerator>
+    public class RestfulApiTest : IClassFixture<RestfulApiDataGenerator>
     {
+        private RestfulApiDataGenerator _restfulApiDataGenerator;
+        private FhirClient _fhirClient;
+        private DomainResource _resource;
+
+        public RestfulApiTest(RestfulApiDataGenerator restfulApiDataGenerator)
+        {
+            var data = restfulApiDataGenerator.Get();
+
+            _fhirClient = data.client;
+            _resource = data.resource;
+        }
+
         /// <summary>
         /// Testing the Read behaviour of the spec http://hl7.org/fhir/http.html#read
         /// </summary>
-        [Theory]
-        [MemberData(nameof(DataGenerator.GetUrlResourceType), MemberType = typeof(DataGenerator))]
-        public void WhenResourceRead(FhirClient client, DomainResource resourceInstance)
+        [Fact]
+        public void WhenResourceRead()
         {
-            var createdModelOnTheServer = client.Create(resourceInstance);
-            var domainResource = client.Read<DomainResource>($"{resourceInstance.GetType().Name}/{createdModelOnTheServer.Id}");
+            var createdModelOnTheServer = _fhirClient.Create(_resource);
+            var domainResource = _fhirClient.Read<DomainResource>($"{_resource.GetType().Name}/{createdModelOnTheServer.Id}");
 
             Assert.NotNull(domainResource);
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), client.LastResult.Status);
+            Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
         }
 
         /// <summary>
         /// Testing Version Read of the spec - http://hl7.org/fhir/http.html#vread
         /// </summary>
-        [Theory]
-        [MemberData(nameof(DataGenerator.GetUrlResourceType), MemberType = typeof(DataGenerator))]
-        public void WhenVersionRead(FhirClient client, DomainResource resourceInstance)
+        [Fact]
+        public void WhenVersionRead()
         {
-            var createdModelOnTheServer = client.Create(resourceInstance);
-            var domainResource = client.Read<DomainResource>($"{resourceInstance.GetType().Name}/{createdModelOnTheServer.Id}/_history/{createdModelOnTheServer.VersionId}");
+            var createdModelOnTheServer = _fhirClient.Create(_resource);
+            var domainResource = _fhirClient.Read<DomainResource>($"{_resource.GetType().Name}/{createdModelOnTheServer.Id}/_history/{createdModelOnTheServer.VersionId}");
 
             Assert.NotNull(domainResource);
-            Assert.NotNull(client.LastResult.Etag == createdModelOnTheServer.VersionId);
-            Assert.NotNull(client.LastResult.LastModified);
+            Assert.Equal(_fhirClient.LastResult.Etag, createdModelOnTheServer.VersionId);
+            Assert.NotNull(_fhirClient.LastResult.LastModified);
         }
 
         /// <summary>
         /// Testing the update behaviour of the spec http://hl7.org/fhir/http.html#update
         /// </summary>
-        [Theory]
-        [MemberData(nameof(DataGenerator.GetUrlResourceType), MemberType = typeof(DataGenerator))]
-        public void WhenResourceUpdated(FhirClient client, DomainResource resourceInstance)
+        [Fact]
+        public void WhenResourceUpdated()
         {
-            var createdModel = client.Create(resourceInstance);
+            var createdModel = _fhirClient.Create(_resource);
 
             createdModel.Text = new Narrative();
 
-            var domainResource = client.Update(createdModel);
+            var domainResource = _fhirClient.Update(createdModel);
 
             Assert.NotNull(domainResource.Text);
         }
@@ -64,11 +75,10 @@ namespace FHIRTest
         /// Multiple matches: The server returns a 412 Precondition Failed error indicating the client's criteria were not selective enough
         /// </summary>
         /// <remarks>Telstra Health passed, but Vonk failed this test</remarks>
-        [Theory]
-        [MemberData(nameof(DataGenerator.GetUrlResourceType), MemberType = typeof(DataGenerator))]
-        public void WhenUpdateForMultipleResourceMatches(FhirClient client, DomainResource resourceInstance)
+        [Fact]
+        public void WhenUpdateForMultipleResourceMatches()
         {
-            resourceInstance.Id = Guid.NewGuid().ToString();
+            _resource.Id = Guid.NewGuid().ToString();
 
             // WhenResourceUpdated with search params for resources which have been updated since 1999
             SearchParams searchParams = new SearchParams();
@@ -78,7 +88,7 @@ namespace FHIRTest
 
             try
             {
-                client.Update(resourceInstance, searchParams);
+                _fhirClient.Update(_resource, searchParams);
             }
             catch (FhirOperationException ex)
             {
@@ -92,42 +102,39 @@ namespace FHIRTest
         /// Testing spec - http://hl7.org/fhir/http.html#patch
         /// </summary>
         /// <remarks>Empty method as FHIRClient doesn't support "Patch" method</remarks>
-        [Theory]
-        [MemberData(nameof(DataGenerator.GetUrlResourceType), MemberType = typeof(DataGenerator))]
-        public void Patch(FhirClient client, DomainResource resourceInstance)
+        [Fact]
+        public void Patch()
         {
         }
 
         /// <summary>
         /// Testing spec - http://hl7.org/fhir/http.html#delete
         /// </summary>
-        [Theory]
-        [MemberData(nameof(DataGenerator.GetUrlResourceType), MemberType = typeof(DataGenerator))]
-        public void WhenResourceDeleted(FhirClient client, DomainResource resourceInstance)
+        [Fact]
+        public void WhenResourceDeleted()
         {
-            var createdModel = client.Create(resourceInstance);
+            var createdModel = _fhirClient.Create(_resource);
 
-            client.Delete(createdModel);
+            _fhirClient.Delete(createdModel);
 
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), client.LastResult.Status);
+            Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
         }
 
         /// <summary>
         /// Testing spec - http://hl7.org/fhir/http.html#delete
         /// </summary>
-        [Theory]
-        [MemberData(nameof(DataGenerator.GetUrlResourceType), MemberType = typeof(DataGenerator))]
-        public void WhenDeletedResourceRead(FhirClient client, DomainResource resourceInstance)
+        [Fact]
+        public void WhenDeletedResourceRead()
         {
-            var createdModel = client.Create(resourceInstance);
+            var createdModel = _fhirClient.Create(_resource);
 
-            client.Delete(createdModel);
+            _fhirClient.Delete(createdModel);
 
             HttpStatusCode statusCode = HttpStatusCode.HttpVersionNotSupported;
 
             try
             {
-                client.Read<DomainResource>($"{resourceInstance.GetType().Name}/{createdModel.Id}");
+                _fhirClient.Read<DomainResource>($"{_resource.GetType().Name}/{createdModel.Id}");
             }
             catch (FhirOperationException ex)
             {
@@ -140,27 +147,25 @@ namespace FHIRTest
         /// <summary>
         /// Testing the behaviour of the spec http://hl7.org/fhir/http.html#create
         /// </summary>
-        [Theory]
-        [MemberData(nameof(DataGenerator.GetUrlResourceType), MemberType = typeof(DataGenerator))]
-        public void WhenResourceCreated(FhirClient client, DomainResource resourceInstance)
+        [Fact]
+        public void WhenResourceCreated()
         {
-            client.Create(resourceInstance);
-            Assert.Equal(((int)HttpStatusCode.Created).ToString(), client.LastResult.Status);
+            _fhirClient.Create(_resource);
+            Assert.Equal(((int)HttpStatusCode.Created).ToString(), _fhirClient.LastResult.Status);
         }
 
         /// <summary>
         /// Testing the behaviour of the spec http://hl7.org/fhir/http.html#ccreate
         /// </summary>
-        [Theory]
-        [MemberData(nameof(DataGenerator.GetUrlResourceType), MemberType = typeof(DataGenerator))]
-        public void WhenResourceCreatedWithNoMatches(FhirClient client, DomainResource resourceInstance)
+        [Fact]
+        public void WhenResourceCreatedWithNoMatches()
         {
             var searchParams = new SearchParams();
             searchParams.Add("_id", Guid.NewGuid().ToString());
 
-            client.Create(resourceInstance, searchParams);
+            _fhirClient.Create(_resource, searchParams);
 
-            Assert.Equal(((int)HttpStatusCode.Created).ToString(), client.LastResult.Status);
+            Assert.Equal(((int)HttpStatusCode.Created).ToString(), _fhirClient.LastResult.Status);
         }
 
         /// <summary>
@@ -168,18 +173,17 @@ namespace FHIRTest
         /// One Match: The server should ignore the post and return 200 OK
         /// </summary>
         /// <remarks>Both Tesltra and Vonk failed this test</remarks>
-        [Theory]
-        [MemberData(nameof(DataGenerator.GetUrlResourceType), MemberType = typeof(DataGenerator))]
-        public void WhenResourceCreatedWithOneMatch(FhirClient client, DomainResource resourceInstance)
+        [Fact]
+        public void WhenResourceCreatedWithOneMatch()
         {
-            var createdModel = client.Create(resourceInstance);
+            var createdModel = _fhirClient.Create(_resource);
 
             var searchParams = new SearchParams();
             searchParams.Add("_id", createdModel.Id);
 
-            client.Create(resourceInstance, searchParams);
+            _fhirClient.Create(_resource, searchParams);
 
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), client.LastResult.Status);
+            Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
         }
 
         /// <summary>
@@ -187,16 +191,15 @@ namespace FHIRTest
         /// One Match: The server ignore the post and returns 200 OK
         /// </summary>
         /// <remarks>Both Tesltra and Vonk failed this test</remarks>
-        [Theory]
-        [MemberData(nameof(DataGenerator.GetUrlResourceType), MemberType = typeof(DataGenerator))]
-        public void WhenResourceCreatedWithMultipleMatches(FhirClient client, DomainResource resourceInstance)
+        [Fact]
+        public void WhenResourceCreatedWithMultipleMatches()
         {
             var searchParams = new SearchParams();
             searchParams.Add("_lastUpdated", "gt2000-01-01");
 
-            client.Create(resourceInstance, searchParams);
+            _fhirClient.Create(_resource, searchParams);
 
-            Assert.Equal(((int)HttpStatusCode.PreconditionFailed).ToString(), client.LastResult.Status);
+            Assert.Equal(((int)HttpStatusCode.PreconditionFailed).ToString(), _fhirClient.LastResult.Status);
         }
     }
 }
