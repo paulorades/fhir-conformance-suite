@@ -86,7 +86,10 @@
     <Compile Include="RestfulAPITest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SearchDataGenerator.cs" />
+    <Compile Include="SearchTestCapabilitiesHelper.cs" />
     <Compile Include="SearchTest.cs" />
+    <Compile Include="VonkDataGenerator.cs" />
+    <Compile Include="VonkSpecificCapabilities.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

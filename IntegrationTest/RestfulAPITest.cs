@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Reflection;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Xunit;
 using Assert = Xunit.Assert;
 
@@ -16,16 +12,17 @@ namespace FHIRTest
     /// </summary>
     public class RestfulApiTest : IClassFixture<RestfulApiDataGenerator>
     {
-        private RestfulApiDataGenerator _restfulApiDataGenerator;
-        private FhirClient _fhirClient;
-        private DomainResource _resource;
+        private readonly FhirClient _fhirClient;
+        private readonly DomainResource _resource;
 
         public RestfulApiTest(RestfulApiDataGenerator restfulApiDataGenerator)
         {
-            var data = restfulApiDataGenerator.Get();
+            _fhirClient = new FhirClient(DataGeneratorHelper.GetServerUrl())
+            {
+                PreferredFormat = ResourceFormat.Json
+            };
 
-            _fhirClient = data.client;
-            _resource = data.resource;
+            _resource = restfulApiDataGenerator.GetResource();
         }
 
         /// <summary>
