@@ -14,9 +14,15 @@ namespace FHIRTest
     public class SearchTest : IClassFixture<SearchDataGenerator>
     {
         private readonly SearchDataGenerator _searchDataGenerator;
+        private readonly FhirClient _fhirClient;
 
         public SearchTest(SearchDataGenerator searchDataGenerator)
         {
+            _fhirClient = new FhirClient(DataGeneratorHelper.GetServerUrl())
+            {
+                PreferredFormat = ResourceFormat.Json
+            };
+
             _searchDataGenerator = searchDataGenerator;
         }
 
@@ -26,18 +32,16 @@ namespace FHIRTest
         [Fact]
         public void WhenResourceSearchedWithIdParam()
         {
-            var data = _searchDataGenerator.GetDataWithResource();
-            var fhirClient = data.Item1;
-            var resource = data.Item2;
+            var resource = _searchDataGenerator.GetDataWithResource(_fhirClient);
 
             SearchParams searchParams = new SearchParams();
             searchParams.Add("_id", resource.Id);
 
-            var bundle = fhirClient.Search(searchParams);
+            var bundle = _fhirClient.Search(searchParams);
 
             Assert.NotNull(bundle);
             Assert.Equal(resource.Id, ((DomainResource)bundle.GetResources().First()).Id);
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), fhirClient.LastResult.Status);
+            Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
         }
 
         /// <summary>
@@ -46,9 +50,7 @@ namespace FHIRTest
         [Fact]
         public void WhenResourceSearchedWithLastUpdatedParam()
         {
-            var data = _searchDataGenerator.GetDataWithResource();
-            var fhirClient = data.Item1;
-            var resource = data.Item2;
+            var resource = _searchDataGenerator.GetDataWithResource(_fhirClient);
 
             DateTimeOffset lastUpdated = resource.Meta.LastUpdated.GetValueOrDefault(DateTimeOffset.Now);
 
@@ -61,94 +63,85 @@ namespace FHIRTest
 
             SearchParams searchParams = new SearchParams();
             searchParams.Add("_lastUpdated", dateTime);
-            
-            AssertSearch(fhirClient, resource, searchParams);
+
+            SearchTestCapabilitiesHelper.SearchThenAssertResult(_fhirClient, resource, searchParams);
         }
 
         [Fact]
         public void WhenResourceSearchedWithValue()
         {
-            var data = _searchDataGenerator.GetDataWithResourceCodableConcept();
-            var fhirClient = data.Item1;
-            var resource = data.Item2;
+            var resource = _searchDataGenerator.GetDataWithResourceCodableConcept(_fhirClient);
 
             SearchParams searchParams = new SearchParams();
             searchParams.Add("value-concept", "http://loinc.org|LA25391-6");
 
-            AssertSearch(fhirClient, resource, searchParams);
+            SearchTestCapabilitiesHelper.SearchThenAssertResult(_fhirClient, resource, searchParams);
         }
 
         [Fact]
         public void WhenResourceSearchedWithModifierIn()
         {
-            var data = _searchDataGenerator.GetDataWithConditionCode();
-            var fhirClient = data.Item1;
-            var resource = data.Item2;
+            var resource = _searchDataGenerator.GetDataWithConditionCode(_fhirClient);
 
             SearchParams searchParams = new SearchParams();
             searchParams.Add("code:in", "http://snomed.info/sct|39065001");
 
-            AssertSearch(fhirClient, resource, searchParams);
+            SearchTestCapabilitiesHelper.SearchThenAssertResult(_fhirClient, resource, searchParams);
         }
 
         [Fact]
         public void WhenResourceSearchedWithQuantity()
         {
-            var data = _searchDataGenerator.GetDataWithObservationQuantity();
-            var fhirClient = data.Item1;
-            var resource = data.Item2;
+            var resource = _searchDataGenerator.GetDataWithObservationQuantity(_fhirClient);
 
             SearchParams searchParams = new SearchParams();
             searchParams.Add("value-quantity", "120.00");
 
-            AssertSearch(fhirClient, resource, searchParams);
+            SearchTestCapabilitiesHelper.SearchThenAssertResult(_fhirClient, resource, searchParams);
         }
 
         [Fact]
         public void WhenResourceSearchedViaChaining()
         {
-            var data = _searchDataGenerator.GetObservationForPatient();
-            var fhirClient = data.Item1;
-            var resource = data.Item2;
+            var resource = _searchDataGenerator.GetObservationForPatient(_fhirClient);
 
             SearchParams searchParams = new SearchParams();
             searchParams.Add("subject:Patient.name", "xyz");
 
-            AssertSearch(fhirClient, resource, searchParams);
+            SearchTestCapabilitiesHelper.SearchThenAssertResult(_fhirClient, resource, searchParams);
         }
 
-        private static void AssertSearch(
-            FhirClient client, 
-            DomainResource resource, 
-            SearchParams searchParams)
+        [Fact]
+        public void WhenResourceSearchedByFilter()
         {
-            var bundle = client.Search(searchParams, resource.GetType().Name);
+            var resource = _searchDataGenerator.GetDataWithResourceCodableConcept(_fhirClient);
 
-            Assert.NotNull(bundle);
+            SearchParams searchParams = new SearchParams();
+            searchParams.Add(SearchParams.SEARCH_PARAM_FILTER, "name eq http://loinc.org|LA25391-6");
 
-            Bundle.EntryComponent entry = null;
+            SearchTestCapabilitiesHelper.SearchThenAssertResult(_fhirClient, resource, searchParams);
+        }
 
-            while (bundle.NextLink != null)
-            {
-                // Find the resource from the bundle
-                entry = bundle.FindEntry($"{client.Endpoint}{resource.GetType().Name}/{resource.Id}").FirstOrDefault();
+        [Fact]
+        public void WhenResourceSearchedViaText()
+        {
+            var resource = _searchDataGenerator.GetConditionToSearchViaContent(_fhirClient);
 
-                if (entry != null)
-                {
-                    break;
-                }
+            SearchParams searchParams = new SearchParams();
+            searchParams.Add(SearchParams.SEARCH_PARAM_TEXT, "bone");
 
-                bundle = client.Continue(bundle);
-            }
+            SearchTestCapabilitiesHelper.SearchThenAssertResult(_fhirClient, resource, searchParams);
+        }
 
-            if (entry == null)
-            {
-                // Find the resource from the bundle
-                entry = bundle.FindEntry($"{client.Endpoint}{resource.GetType().Name}/{resource.Id}").FirstOrDefault();
-            }
+        [Fact]
+        public void WhenResourceSearchedViaProfile()
+        {
+            var resource = _searchDataGenerator.GetDataWithResource(_fhirClient);
 
-            Assert.NotNull(entry);
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), client.LastResult.Status);
+            SearchParams searchParams = new SearchParams();
+            searchParams.Add("_profile", "http://hl7.org/fhir/StructureDefinition/vitalsigns");
+
+            SearchTestCapabilitiesHelper.SearchThenAssertResult(_fhirClient, resource, searchParams);
         }
     }
 }
