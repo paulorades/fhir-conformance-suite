@@ -10,6 +10,9 @@ namespace FHIRTest
         {
             AllergyIntolerance allergyIntolerance = new AllergyIntolerance
             {
+                ClinicalStatus = AllergyIntolerance.AllergyIntoleranceClinicalStatus.Active,
+                VerificationStatus = AllergyIntolerance.AllergyIntoleranceVerificationStatus.Confirmed,
+                Patient = new ResourceReference("Patient/example"),
                 Category = new List<AllergyIntolerance.AllergyIntoleranceCategory?>
                 {
                     AllergyIntolerance.AllergyIntoleranceCategory.Food
@@ -23,6 +26,8 @@ namespace FHIRTest
         {
             Procedure procedure = new Procedure
             {
+                Status = EventStatus.Completed,
+                Subject = new ResourceReference("Patient/example"),
                 BodySite = new List<CodeableConcept>
                 {
                     new CodeableConcept("http://snomed.info/sct", "272676008", "sample")
