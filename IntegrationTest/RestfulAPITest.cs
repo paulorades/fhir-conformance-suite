@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
@@ -22,12 +23,13 @@ namespace FHIRTest
                 PreferredFormat = ResourceFormat.Json
             };
 
-            _resource = restfulApiDataGenerator.GetResource();
+            _resource = restfulApiDataGenerator.GetObservation();
         }
 
         /// <summary>
         /// Testing the Read behaviour of the spec http://hl7.org/fhir/http.html#read
         /// </summary>
+        /// <remarks>The test.fhir.org server occasionally deadlocks on this test.</remarks>
         [Fact]
         public void WhenResourceRead()
         {
@@ -60,7 +62,12 @@ namespace FHIRTest
         {
             var createdModel = _fhirClient.Create(_resource);
 
-            createdModel.Text = new Narrative();
+            // Per the spec, a div and status are required in a narrative https://www.hl7.org/fhir/narrative.html#Narrative
+            createdModel.Text = new Narrative
+            {
+                Div = @"<div xmlns=""http://www.w3.org/1999/xhtml"">This is a simple example with only plain text </div>",
+                Status = Narrative.NarrativeStatus.Generated
+            };
 
             var domainResource = _fhirClient.Update(createdModel);
 
@@ -114,7 +121,12 @@ namespace FHIRTest
 
             _fhirClient.Delete(createdModel);
 
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
+            var acceptedValues = new HashSet<string>
+            {
+                ((int)HttpStatusCode.OK).ToString(),
+                ((int)HttpStatusCode.NoContent).ToString(),
+            };
+            Assert.Subset(acceptedValues, new HashSet<string>{_fhirClient.LastResult.Status});
         }
 
         /// <summary>
@@ -154,6 +166,7 @@ namespace FHIRTest
         /// <summary>
         /// Testing the behaviour of the spec http://hl7.org/fhir/http.html#ccreate
         /// </summary>
+        /// <remarks>The test.fhir.org server occasionally deadlocks on this test.</remarks>
         [Fact]
         public void WhenResourceCreatedWithNoMatches()
         {
@@ -170,6 +183,7 @@ namespace FHIRTest
         /// One Match: The server should ignore the post and return 200 OK
         /// </summary>
         /// <remarks>Both Tesltra and Vonk failed this test</remarks>
+        /// <remarks>The test.fhir.org server occasionally deadlocks on this test.</remarks>
         [Fact]
         public void WhenResourceCreatedWithOneMatch()
         {
@@ -194,7 +208,18 @@ namespace FHIRTest
             var searchParams = new SearchParams();
             searchParams.Add("_lastUpdated", "gt2000-01-01");
 
-            _fhirClient.Create(_resource, searchParams);
+            try
+            {
+                _fhirClient.Create(_resource, searchParams);
+            }
+            catch (FhirOperationException exception)
+            {
+                // When a 412 status code is returned, the _fhirClient throws an FhirOperationException
+                if (exception.Status != HttpStatusCode.PreconditionFailed)
+                {
+                    throw exception;
+                }
+            }
 
             Assert.Equal(((int)HttpStatusCode.PreconditionFailed).ToString(), _fhirClient.LastResult.Status);
         }

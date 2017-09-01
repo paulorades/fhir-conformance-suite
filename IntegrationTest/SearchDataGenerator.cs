@@ -11,13 +11,19 @@ namespace FHIRTest
         {
             Observation observation = new Observation
             {
-                Value = new FhirDecimal(20),
+                Status = ObservationStatus.Final,
+                Code = new CodeableConcept("http://loinc.org", "29463-7", "Body weight"),
+                Value = new Quantity(new decimal(130.00), "kg"){Code = "kg"},
+                DataAbsentReason = new CodeableConcept("http://hl7.org/fhir/data-absent-reason", "unknown"),
+                Category = new List<CodeableConcept>{ new CodeableConcept("http://hl7.org/fhir/observation-category", "vital-signs", "Vital Signs") },
+                Subject = new ResourceReference("Patient/example"),
+                Effective = new FhirDateTime(DateTime.Now),
                 Meta = new Meta
                 {
                     Profile = new[] { "http://hl7.org/fhir/StructureDefinition/vitalsigns" }
                 }
             };
-
+            
             return fhirClient.Create(observation);
         }
 
@@ -25,6 +31,8 @@ namespace FHIRTest
         {
             Observation observation = new Observation
             {
+                Status = ObservationStatus.Final,
+                Code = new CodeableConcept("http://loinc.org", "LA25391-6", "Normal metabolizer"),
                 Value = new CodeableConcept("http://loinc.org", "LA25391-6", "Normal metabolizer")
             };
 
@@ -35,6 +43,7 @@ namespace FHIRTest
         {
             var condition = new Observation
             {
+                Status = ObservationStatus.Final,
                 Code = new CodeableConcept("http://snomed.info/sct", "39065001", "Normal metabolizer")
             };
 
@@ -45,6 +54,8 @@ namespace FHIRTest
         {
             var condition = new Observation
             {
+                Status = ObservationStatus.Final,
+                Code = new CodeableConcept("http://snomed.info/sct", "39065001", "Normal metabolizer"),
                 Value = new Quantity(120.00M, "kg")
             };
 
@@ -57,8 +68,11 @@ namespace FHIRTest
             {
                 Text = new Narrative
                 {
-                    Div = "bone"
-                }
+                    Status = Narrative.NarrativeStatus.Generated,
+                    Div = "<div xmlns=\"http://www.w3.org/1999/xhtml\">bone</div>"
+                },
+                ClinicalStatus = Condition.ConditionClinicalStatusCodes.Active,
+                Subject = new ResourceReference("Patient/example")
             };
 
             return fhirClient.Create(condition);
@@ -82,6 +96,8 @@ namespace FHIRTest
 
             var observation = new Observation
             {
+                Status = ObservationStatus.Final,
+                Code = new CodeableConcept("http://loinc.org", "29463-7", "Body weight"),
                 Value = new Quantity(120.00M, "kg"),
                 Subject = new ResourceReference($"Patient/{uplaodedPatient.Id}")
             };
