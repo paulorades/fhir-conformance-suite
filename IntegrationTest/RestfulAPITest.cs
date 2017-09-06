@@ -4,6 +4,8 @@ using System.Net;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
 using Xunit;
+using Xunit.Abstractions;
+using Xunit.Sdk;
 using Assert = Xunit.Assert;
 
 namespace FHIRTest
@@ -14,7 +16,7 @@ namespace FHIRTest
     public class RestfulApiTest : IClassFixture<RestfulApiDataGenerator>
     {
         private readonly FhirClient _fhirClient;
-        private readonly DomainResource _resource;
+        private readonly DomainResource _observation;
 
         public RestfulApiTest(RestfulApiDataGenerator restfulApiDataGenerator)
         {
@@ -23,21 +25,49 @@ namespace FHIRTest
                 PreferredFormat = ResourceFormat.Json
             };
 
-            _resource = restfulApiDataGenerator.GetObservation();
+            _observation = restfulApiDataGenerator.GetObservation();
         }
 
         /// <summary>
         /// Testing the Read behaviour of the spec http://hl7.org/fhir/http.html#read
         /// </summary>
-        /// <remarks>The test.fhir.org server occasionally deadlocks on this test.</remarks>
         [Fact]
         public void WhenResourceRead()
         {
-            var createdModelOnTheServer = _fhirClient.Create(_resource);
-            var domainResource = _fhirClient.Read<DomainResource>($"{_resource.GetType().Name}/{createdModelOnTheServer.Id}");
+            var createdModelOnTheServer = _fhirClient.Create(_observation);
+            var domainResource = _fhirClient.Read<DomainResource>($"{_observation.GetType().Name}/{createdModelOnTheServer.Id}");
 
             Assert.NotNull(domainResource);
             Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
+        }
+
+
+        /// <summary>
+        /// Testing conditional Read behaviour of the spec https://www.hl7.org/fhir/http.html#cread
+        /// </summary>
+        [Fact]
+        public void WhenResourceReadWithIfModifiedSinceHeader()
+        {
+            var createdModelOnTheServer = _fhirClient.Create(_observation);
+
+            var domainResource = _fhirClient.Read<DomainResource>($"{_observation.GetType().Name}/{createdModelOnTheServer.Id}", ifModifiedSince: DateTimeOffset.Now);
+
+            bool success = false;
+            string message = "Test failed";
+
+            if (domainResource != null)
+            {
+                success = true;
+                message = "Domain Resournce not null";
+            }
+
+            if (((int)HttpStatusCode.NotModified).ToString() == _fhirClient.LastResult.Status)
+            {
+                success = true;
+                message = "Status code is not modified";
+            }
+
+            Assert.True(success, message);
         }
 
         /// <summary>
@@ -46,8 +76,8 @@ namespace FHIRTest
         [Fact]
         public void WhenVersionRead()
         {
-            var createdModelOnTheServer = _fhirClient.Create(_resource);
-            var domainResource = _fhirClient.Read<DomainResource>($"{_resource.GetType().Name}/{createdModelOnTheServer.Id}/_history/{createdModelOnTheServer.VersionId}");
+            var createdModelOnTheServer = _fhirClient.Create(_observation);
+            var domainResource = _fhirClient.Read<DomainResource>($"{_observation.GetType().Name}/{createdModelOnTheServer.Id}/_history/{createdModelOnTheServer.VersionId}");
 
             Assert.NotNull(domainResource);
             Assert.Equal(_fhirClient.LastResult.Etag, createdModelOnTheServer.VersionId);
@@ -60,14 +90,9 @@ namespace FHIRTest
         [Fact]
         public void WhenResourceUpdated()
         {
-            var createdModel = _fhirClient.Create(_resource);
+            var createdModel = _fhirClient.Create(_observation);
 
-            // Per the spec, a div and status are required in a narrative https://www.hl7.org/fhir/narrative.html#Narrative
-            createdModel.Text = new Narrative
-            {
-                Div = @"<div xmlns=""http://www.w3.org/1999/xhtml"">This is a simple example with only plain text </div>",
-                Status = Narrative.NarrativeStatus.Generated
-            };
+            createdModel.Text = new Narrative();
 
             var domainResource = _fhirClient.Update(createdModel);
 
@@ -82,7 +107,7 @@ namespace FHIRTest
         [Fact]
         public void WhenUpdateForMultipleResourceMatches()
         {
-            _resource.Id = Guid.NewGuid().ToString();
+            _observation.Id = Guid.NewGuid().ToString();
 
             // WhenResourceUpdated with search params for resources which have been updated since 1999
             SearchParams searchParams = new SearchParams();
@@ -92,7 +117,7 @@ namespace FHIRTest
 
             try
             {
-                _fhirClient.Update(_resource, searchParams);
+                _fhirClient.Update(_observation, searchParams);
             }
             catch (FhirOperationException ex)
             {
@@ -117,16 +142,11 @@ namespace FHIRTest
         [Fact]
         public void WhenResourceDeleted()
         {
-            var createdModel = _fhirClient.Create(_resource);
+            var createdModel = _fhirClient.Create(_observation);
 
             _fhirClient.Delete(createdModel);
 
-            var acceptedValues = new HashSet<string>
-            {
-                ((int)HttpStatusCode.OK).ToString(),
-                ((int)HttpStatusCode.NoContent).ToString(),
-            };
-            Assert.Subset(acceptedValues, new HashSet<string>{_fhirClient.LastResult.Status});
+            Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
         }
 
         /// <summary>
@@ -135,7 +155,7 @@ namespace FHIRTest
         [Fact]
         public void WhenDeletedResourceRead()
         {
-            var createdModel = _fhirClient.Create(_resource);
+            var createdModel = _fhirClient.Create(_observation);
 
             _fhirClient.Delete(createdModel);
 
@@ -143,7 +163,7 @@ namespace FHIRTest
 
             try
             {
-                _fhirClient.Read<DomainResource>($"{_resource.GetType().Name}/{createdModel.Id}");
+                _fhirClient.Read<DomainResource>($"{_observation.GetType().Name}/{createdModel.Id}");
             }
             catch (FhirOperationException ex)
             {
@@ -154,26 +174,39 @@ namespace FHIRTest
         }
 
         /// <summary>
+        /// Create 2 observations and then try to delete, expected according to spec is either PreCondition failed or No content
+        /// </summary>
+        [Fact]
+        public void WhenDeleteResourceHasMultipleMatches()
+        {
+            _fhirClient.Create(_observation);
+            _fhirClient.Create(_observation);
+
+            _fhirClient.Delete(nameof(Observation), new SearchParams().Add("status", "final"));
+
+            Assert.Equal(((int)HttpStatusCode.NoContent).ToString(), _fhirClient.LastResult.Status);
+        }
+
+        /// <summary>
         /// Testing the behaviour of the spec http://hl7.org/fhir/http.html#create
         /// </summary>
         [Fact]
         public void WhenResourceCreated()
         {
-            _fhirClient.Create(_resource);
+            _fhirClient.Create(_observation);
             Assert.Equal(((int)HttpStatusCode.Created).ToString(), _fhirClient.LastResult.Status);
         }
 
         /// <summary>
         /// Testing the behaviour of the spec http://hl7.org/fhir/http.html#ccreate
         /// </summary>
-        /// <remarks>The test.fhir.org server occasionally deadlocks on this test.</remarks>
         [Fact]
         public void WhenResourceCreatedWithNoMatches()
         {
             var searchParams = new SearchParams();
             searchParams.Add("_id", Guid.NewGuid().ToString());
 
-            _fhirClient.Create(_resource, searchParams);
+            _fhirClient.Create(_observation, searchParams);
 
             Assert.Equal(((int)HttpStatusCode.Created).ToString(), _fhirClient.LastResult.Status);
         }
@@ -183,16 +216,15 @@ namespace FHIRTest
         /// One Match: The server should ignore the post and return 200 OK
         /// </summary>
         /// <remarks>Both Tesltra and Vonk failed this test</remarks>
-        /// <remarks>The test.fhir.org server occasionally deadlocks on this test.</remarks>
         [Fact]
         public void WhenResourceCreatedWithOneMatch()
         {
-            var createdModel = _fhirClient.Create(_resource);
+            var createdModel = _fhirClient.Create(_observation);
 
             var searchParams = new SearchParams();
             searchParams.Add("_id", createdModel.Id);
 
-            _fhirClient.Create(_resource, searchParams);
+            _fhirClient.Create(_observation, searchParams);
 
             Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
         }
@@ -208,18 +240,7 @@ namespace FHIRTest
             var searchParams = new SearchParams();
             searchParams.Add("_lastUpdated", "gt2000-01-01");
 
-            try
-            {
-                _fhirClient.Create(_resource, searchParams);
-            }
-            catch (FhirOperationException exception)
-            {
-                // When a 412 status code is returned, the _fhirClient throws an FhirOperationException
-                if (exception.Status != HttpStatusCode.PreconditionFailed)
-                {
-                    throw exception;
-                }
-            }
+            _fhirClient.Create(_observation, searchParams);
 
             Assert.Equal(((int)HttpStatusCode.PreconditionFailed).ToString(), _fhirClient.LastResult.Status);
         }
