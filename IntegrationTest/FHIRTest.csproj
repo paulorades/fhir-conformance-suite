@@ -81,7 +81,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DataGeneratorHelper.cs" />
-    <Compile Include="RestfulAPIDataGenerator.cs" />
+    <Compile Include="HistoryTest.cs" />
+    <Compile Include="DataGenerator.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="RestfulAPITest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

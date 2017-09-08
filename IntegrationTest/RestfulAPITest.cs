@@ -13,12 +13,12 @@ namespace FHIRTest
     /// <summary>
     /// Testing Restful API FHIR spec defined here http://hl7.org/fhir/http.html#2.21.0
     /// </summary>
-    public class RestfulApiTest : IClassFixture<RestfulApiDataGenerator>
+    public class RestfulApiTest : IClassFixture<DataGenerator>
     {
         private readonly FhirClient _fhirClient;
         private readonly DomainResource _observation;
 
-        public RestfulApiTest(RestfulApiDataGenerator restfulApiDataGenerator)
+        public RestfulApiTest(DataGenerator dataGenerator)
         {
             _fhirClient = new FhirClient(DataGeneratorHelper.GetServerUrl())
             {
