@@ -80,6 +80,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AssertHelper.cs" />
+    <Compile Include="BatchTest.cs" />
+    <Compile Include="BundleHelper.cs" />
     <Compile Include="DataGeneratorHelper.cs" />
     <Compile Include="HistoryTest.cs" />
     <Compile Include="DataGenerator.cs" />
@@ -89,6 +92,7 @@
     <Compile Include="SearchDataGenerator.cs" />
     <Compile Include="SearchTestCapabilitiesHelper.cs" />
     <Compile Include="SearchTest.cs" />
+    <Compile Include="TransactionTest.cs" />
     <Compile Include="VonkDataGenerator.cs" />
     <Compile Include="VonkSpecificCapabilities.cs" />
   </ItemGroup>
