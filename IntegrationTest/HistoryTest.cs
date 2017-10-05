@@ -34,8 +34,8 @@ namespace FHIRTest
             var historyResults = _fhirClient.WholeSystemHistory();
 
             Assert.NotNull(historyResults);
-            Assert.True(historyResults.Entry.Count > 0);
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
+            Assert.NotEmpty(historyResults.Entry);
+            AssertHelper.CheckStatusCode(HttpStatusCode.OK, _fhirClient.LastResult.Status);
         }
 
         /// <summary>
@@ -51,8 +51,8 @@ namespace FHIRTest
             var historyResults = _fhirClient.WholeSystemHistory(pageSize: 1);
 
             Assert.NotNull(historyResults);
-            Assert.True(historyResults.Entry.Count == 1);
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
+            Assert.Equal(1, historyResults.Entry.Count);
+            AssertHelper.CheckStatusCode(HttpStatusCode.OK, _fhirClient.LastResult.Status);
         }
 
         /// <summary>
@@ -74,8 +74,8 @@ namespace FHIRTest
             var historyResults = _fhirClient.WholeSystemHistory(sinceValue);
 
             Assert.NotNull(historyResults);
-            Assert.False(historyResults.Entry.Any(x => x.Resource.Id == firstObservation.Id));
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
+            Assert.DoesNotContain(historyResults.Entry, x => x.Resource.Id == firstObservation.Id);
+            AssertHelper.CheckStatusCode(HttpStatusCode.OK, _fhirClient.LastResult.Status);
         }
 
         /// <summary>
@@ -90,8 +90,8 @@ namespace FHIRTest
             var historyResults = _fhirClient.TypeHistory<Observation>();
 
             Assert.NotNull(historyResults);
-            Assert.True(historyResults.Entry.Count > 0);
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
+            Assert.NotEmpty(historyResults.Entry);
+            AssertHelper.CheckStatusCode(HttpStatusCode.OK, _fhirClient.LastResult.Status);
         }
 
         /// <summary>
@@ -107,8 +107,8 @@ namespace FHIRTest
             var historyResults = _fhirClient.TypeHistory<Observation>(pageSize: 1);
 
             Assert.NotNull(historyResults);
-            Assert.True(historyResults.Entry.Count == 1);
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
+            Assert.Equal(1, historyResults.Entry.Count);
+            AssertHelper.CheckStatusCode(HttpStatusCode.OK, _fhirClient.LastResult.Status);
         }
 
         /// <summary>
@@ -130,8 +130,8 @@ namespace FHIRTest
             var historyResults = _fhirClient.TypeHistory<Observation>(sinceValue);
 
             Assert.NotNull(historyResults);
-            Assert.False(historyResults.Entry.Any(x => x.Resource.Id == firstObservation.Id));
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
+            Assert.DoesNotContain(historyResults.Entry, x => x.Resource.Id == firstObservation.Id);
+            AssertHelper.CheckStatusCode(HttpStatusCode.OK, _fhirClient.LastResult.Status);
         }
 
         /// <summary>
@@ -148,7 +148,7 @@ namespace FHIRTest
 
             Assert.NotNull(historyResults);
             Assert.Equal(2, historyResults.Entry.Count);
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
+            AssertHelper.CheckStatusCode(HttpStatusCode.OK, _fhirClient.LastResult.Status);
         }
 
         /// <summary>
@@ -165,7 +165,7 @@ namespace FHIRTest
 
             Assert.NotNull(historyResults);
             Assert.Equal(1, historyResults.Entry.Count);
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
+            AssertHelper.CheckStatusCode(HttpStatusCode.OK, _fhirClient.LastResult.Status);
         }
 
         /// <summary>
@@ -190,7 +190,7 @@ namespace FHIRTest
 
             Assert.NotNull(historyResults);
             Assert.Equal(1, historyResults.Entry.Count);
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
+            AssertHelper.CheckStatusCode(HttpStatusCode.OK, _fhirClient.LastResult.Status);
         }
     }
 }

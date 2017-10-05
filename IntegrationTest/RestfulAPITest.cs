@@ -38,7 +38,7 @@ namespace FHIRTest
             var domainResource = _fhirClient.Read<DomainResource>($"{_observation.GetType().Name}/{createdModelOnTheServer.Id}");
 
             Assert.NotNull(domainResource);
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
+            AssertHelper.CheckStatusCode(HttpStatusCode.OK, _fhirClient.LastResult.Status);
         }
 
 
@@ -146,7 +146,7 @@ namespace FHIRTest
 
             _fhirClient.Delete(createdModel);
 
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
+            AssertHelper.CheckDeleteStatusCode(_fhirClient.LastResult.Status);
         }
 
         /// <summary>
@@ -194,7 +194,8 @@ namespace FHIRTest
         public void WhenResourceCreated()
         {
             _fhirClient.Create(_observation);
-            Assert.Equal(((int)HttpStatusCode.Created).ToString(), _fhirClient.LastResult.Status);
+
+            AssertHelper.CheckStatusCode(HttpStatusCode.Created, _fhirClient.LastResult.Status);
         }
 
         /// <summary>
@@ -208,7 +209,7 @@ namespace FHIRTest
 
             _fhirClient.Create(_observation, searchParams);
 
-            Assert.Equal(((int)HttpStatusCode.Created).ToString(), _fhirClient.LastResult.Status);
+            AssertHelper.CheckStatusCode(HttpStatusCode.Created, _fhirClient.LastResult.Status);
         }
 
         /// <summary>
@@ -226,7 +227,7 @@ namespace FHIRTest
 
             _fhirClient.Create(_observation, searchParams);
 
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
+            AssertHelper.CheckStatusCode(HttpStatusCode.OK, _fhirClient.LastResult.Status);
         }
 
         /// <summary>
@@ -240,9 +241,20 @@ namespace FHIRTest
             var searchParams = new SearchParams();
             searchParams.Add("_lastUpdated", "gt2000-01-01");
 
-            _fhirClient.Create(_observation, searchParams);
-
-            Assert.Equal(((int)HttpStatusCode.PreconditionFailed).ToString(), _fhirClient.LastResult.Status);
+            try
+            {
+                _fhirClient.Create(_resource, searchParams);
+            }
+            catch (FhirOperationException exception)
+            {
+                // When a 412 status code is returned, the _fhirClient throws an FhirOperationException
+                if (exception.Status != HttpStatusCode.PreconditionFailed)
+                {
+                    throw exception;
+                }
+            }
+            
+            AssertHelper.CheckStatusCode(HttpStatusCode.PreconditionFailed, _fhirClient.LastResult.Status);
         }
     }
 }
