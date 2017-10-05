@@ -37,7 +37,7 @@ namespace FHIRTest
             var domainResource = _fhirClient.Read<DomainResource>($"{_resource.GetType().Name}/{createdModelOnTheServer.Id}");
 
             Assert.NotNull(domainResource);
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
+            AssertHelper.CheckStatusCode(HttpStatusCode.OK, _fhirClient.LastResult.Status);
         }
 
         /// <summary>
@@ -121,12 +121,7 @@ namespace FHIRTest
 
             _fhirClient.Delete(createdModel);
 
-            var acceptedValues = new HashSet<string>
-            {
-                ((int)HttpStatusCode.OK).ToString(),
-                ((int)HttpStatusCode.NoContent).ToString(),
-            };
-            Assert.Subset(acceptedValues, new HashSet<string>{_fhirClient.LastResult.Status});
+            AssertHelper.CheckDeleteStatusCode(_fhirClient.LastResult.Status);
         }
 
         /// <summary>
@@ -160,7 +155,8 @@ namespace FHIRTest
         public void WhenResourceCreated()
         {
             _fhirClient.Create(_resource);
-            Assert.Equal(((int)HttpStatusCode.Created).ToString(), _fhirClient.LastResult.Status);
+
+            AssertHelper.CheckStatusCode(HttpStatusCode.Created, _fhirClient.LastResult.Status);
         }
 
         /// <summary>
@@ -175,7 +171,7 @@ namespace FHIRTest
 
             _fhirClient.Create(_resource, searchParams);
 
-            Assert.Equal(((int)HttpStatusCode.Created).ToString(), _fhirClient.LastResult.Status);
+            AssertHelper.CheckStatusCode(HttpStatusCode.Created, _fhirClient.LastResult.Status);
         }
 
         /// <summary>
@@ -194,7 +190,7 @@ namespace FHIRTest
 
             _fhirClient.Create(_resource, searchParams);
 
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
+            AssertHelper.CheckStatusCode(HttpStatusCode.OK, _fhirClient.LastResult.Status);
         }
 
         /// <summary>
@@ -220,8 +216,8 @@ namespace FHIRTest
                     throw exception;
                 }
             }
-
-            Assert.Equal(((int)HttpStatusCode.PreconditionFailed).ToString(), _fhirClient.LastResult.Status);
+            
+            AssertHelper.CheckStatusCode(HttpStatusCode.PreconditionFailed, _fhirClient.LastResult.Status);
         }
     }
 }

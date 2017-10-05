@@ -117,6 +117,8 @@ namespace FHIRTest
             {
                 ((int)HttpStatusCode.InternalServerError).ToString(),
                 ((int)HttpStatusCode.BadRequest).ToString(),
+                "500 Internal Server Error",
+                "400 Bad Request",
             };
             
             try
