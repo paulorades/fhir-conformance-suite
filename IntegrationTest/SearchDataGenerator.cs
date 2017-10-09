@@ -92,14 +92,14 @@ namespace FHIRTest
                 }
             };
 
-            Patient uplaodedPatient = fhirClient.Create(patient);
+            Patient uploadedPatient = fhirClient.Create(patient);
 
             var observation = new Observation
             {
                 Status = ObservationStatus.Final,
                 Code = new CodeableConcept("http://loinc.org", "29463-7", "Body weight"),
                 Value = new Quantity(120.00M, "kg"),
-                Subject = new ResourceReference($"Patient/{uplaodedPatient.Id}")
+                Subject = new ResourceReference($"Patient/{uploadedPatient.Id}")
             };
 
             return fhirClient.Create(observation);
