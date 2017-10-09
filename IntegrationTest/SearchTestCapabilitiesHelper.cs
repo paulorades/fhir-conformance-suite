@@ -50,7 +50,7 @@ namespace FHIRTest
             }
 
             Assert.NotNull(entry);
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), client.LastResult.Status);
+            AssertHelper.CheckStatusCode(HttpStatusCode.OK, client.LastResult.Status);
         }
     }
 }

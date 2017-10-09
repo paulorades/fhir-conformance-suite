@@ -2,9 +2,9 @@
 
 namespace FHIRTest
 {
-    public class RestfulApiDataGenerator
+    public class DataGenerator
     {
-        public DomainResource GetObservation()
+        public Observation GetObservation()
         {
            return new Observation { 
                 Status = ObservationStatus.Final,

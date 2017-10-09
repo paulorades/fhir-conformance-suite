@@ -41,7 +41,7 @@ namespace FHIRTest
 
             Assert.NotNull(bundle);
             Assert.Equal(resource.Id, ((DomainResource)bundle.GetResources().First()).Id);
-            Assert.Equal(((int)HttpStatusCode.OK).ToString(), _fhirClient.LastResult.Status);
+            AssertHelper.CheckStatusCode(HttpStatusCode.OK, _fhirClient.LastResult.Status);
         }
 
         /// <summary>

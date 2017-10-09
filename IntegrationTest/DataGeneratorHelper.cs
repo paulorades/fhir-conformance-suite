@@ -14,7 +14,7 @@ namespace FHIRTest
         /// <returns>FHIR test server end point</returns>
         public static string GetServerUrl()
         {
-            return Environment.GetEnvironmentVariable(FhirTestServerUrl) ?? Constants.VONK_FHIR_ENDPOINT;
+            return Environment.GetEnvironmentVariable(FhirTestServerUrl) ?? Constants.HAPI_FHIR_ENDPOINT;
         }
     }
 }

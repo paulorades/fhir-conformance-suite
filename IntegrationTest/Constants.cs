@@ -8,5 +8,7 @@
         public static readonly string AID_BOX = "https://fhirvault.aidbox.io/fhir/";
         public static readonly string LOCAL_SPARK_STU3 = "http://10.179.88.57/spark-stu3/fhir/";
         public static readonly string TEST_FHIR_ENDPOINT = "http://test.fhir.org/r3";
+        public static readonly string SPARK_FHIR_ENDPOINT = "http://10.179.88.57/spark-stu3/fhir";
+        public static readonly string HAPI_FHIR_ENDPOINT = "http://fhirtest.uhn.ca/baseDstu3";
     }
 }
