@@ -25,7 +25,7 @@ namespace FHIRTest
                 PreferredFormat = ResourceFormat.Json
             };
 
-            _observation = restfulApiDataGenerator.GetObservation();
+            _observation = dataGenerator.GetObservation();
         }
 
         /// <summary>
@@ -243,14 +243,14 @@ namespace FHIRTest
 
             try
             {
-                _fhirClient.Create(_resource, searchParams);
+                _fhirClient.Create(_observation, searchParams);
             }
             catch (FhirOperationException exception)
             {
                 // When a 412 status code is returned, the _fhirClient throws an FhirOperationException
                 if (exception.Status != HttpStatusCode.PreconditionFailed)
                 {
-                    throw exception;
+                    throw;
                 }
             }
             
