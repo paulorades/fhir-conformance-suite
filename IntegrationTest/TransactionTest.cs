@@ -1,4 +1,14 @@
-﻿using System.Collections.Generic;
+﻿// <copyright file="TransactionTest.cs" company="Microsoft Corporation">
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// MIT License
+// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+// </copyright>
+
+using System.Collections.Generic;
 using System.Net;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
@@ -20,7 +30,7 @@ namespace FHIRTest
 
             _resource = dataGenerator.GetObservation();
         }
-        
+
         [Fact]
         public void WhenBasicTransactionSubmitted_AllActionsExecuted()
         {
@@ -50,7 +60,7 @@ namespace FHIRTest
 
             AssertHelper.CheckStatusCode(HttpStatusCode.OK, _fhirClient.LastResult.Status);
         }
-        
+
         [Fact]
         public void WhenCRUDTransactionSubmitted_AllActionsExecuted()
         {
@@ -104,7 +114,7 @@ namespace FHIRTest
 
             // Attempting to update the same resource twice in a single transaction is supposed to fail
             // "If any resource identities (including resolved identities from conditional update/delete) overlap in steps 1-3, then the transaction SHALL fail."
-            // See https://www.hl7.org/fhir/http.html#transaction for details 
+            // See https://www.hl7.org/fhir/http.html#transaction for details
             var transaction = new TransactionBuilder(_fhirClient.Endpoint)
                 .Update(updateResource1.Id, updateResource1)
                 .Update(updateResource1.Id, updateResource2);
@@ -120,12 +130,12 @@ namespace FHIRTest
                 "500 Internal Server Error",
                 "400 Bad Request",
             };
-            
+
             try
             {
                 _fhirClient.Transaction(bundle);
             }
-            catch(FhirOperationException)
+            catch (FhirOperationException)
             {
                 AssertHelper.CheckSubsetStatusCode(acceptedValues, _fhirClient.LastResult.Status);
             }
